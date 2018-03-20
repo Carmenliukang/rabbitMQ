@@ -14,6 +14,7 @@ VIRTUAL_HOST = 'test'
 PORT = 5672
 CONNECT_TIMEOUT = 3
 HEARTBEAT = 0
+
 # "amqp://guest:guest@localhost:5672//"中的amqp就是上文所提到的transport，
 # 后面的部分是连接具体transport所需的参数，具体含义下篇博客中会讲到
 with Connection(hostname=rabbitmq_config.get('hostname', HOSTNAME),
