@@ -62,7 +62,7 @@ def consumerFunc(conn, exchange='amq.direct', ex_type="direct"):
 
 def handle_message(body, message):
     print body
-    # time.sleep(5)
+    time.sleep(5)
     message.ack()
 
 
