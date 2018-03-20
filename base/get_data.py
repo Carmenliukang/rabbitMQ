@@ -2,9 +2,7 @@
 # -*- coding:utf-8 -*- 
 __author__ = "liukang"
 
-import time
-
-from kombu import BrokerConnection, Exchange, Queue, Producer, Consumer
+from kombu import BrokerConnection, Exchange, Queue, Consumer
 
 
 def get_rabbitmq_link(rabbitmq_config):
@@ -49,25 +47,6 @@ def get_rabbitmq_link(rabbitmq_config):
     return conn
 
 
-def producerFunc(conn, exchange='amq.direct', ex_type="direct"):
-    '''
-    用于创建生产者队列
-    :param exchange: exchange交换机通道名称
-    :param ex_type: exchange交换机通道类型
-    :return: 生产者
-    '''
-    try:
-        chan = conn.channel()
-        exchange = Exchange(exchange, type=ex_type)
-        producer = Producer(chan, exchange)
-
-        return chan, producer
-
-    except Exception as e:
-        print e
-        return None
-
-
 def consumerFunc(conn, exchange='amq.direct', ex_type="direct"):
     '''
     用于创建消费者
@@ -83,29 +62,14 @@ def consumerFunc(conn, exchange='amq.direct', ex_type="direct"):
 
 def handle_message(body, message):
     print body
-    time.sleep(5)
+    # time.sleep(5)
     message.ack()
 
 
 def setconsumer(qname, exchange, routekey, auto_del, chan):
     queue = Queue(qname, exchange, routing_key=routekey, auto_delete=auto_del)
     consumer = Consumer(chan, queue, callbacks=[handle_message])
-    consumer.consume(no_ack=False)
-
-
-def post(data):
-    rabbitmq_config = {}
-    # rabbitMQ 链接
-    conn = get_rabbitmq_link(rabbitmq_config)
-    # 生产者
-    chan, producer = producerFunc(conn=conn)
-    # 插入数据
-    if producer:
-        producer.publish(body=data, routing_key='count')
-        chan.close()
-        conn.close()
-    else:
-        print 'error'
+    consumer.consume()
 
 
 def get():
@@ -122,6 +86,4 @@ def get():
 
 
 if __name__ == '__main__':
-    # data = {'name': 'liukang'}
-    # post(data)
     get()
