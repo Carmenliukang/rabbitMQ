@@ -2,6 +2,8 @@
 # -*- coding:utf-8 -*- 
 __author__ = "liukang"
 
+import time
+
 from kombu import BrokerConnection, Exchange, Queue, Consumer
 
 
