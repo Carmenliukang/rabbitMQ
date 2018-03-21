@@ -22,7 +22,7 @@ def get_rabbitmq_link(rabbitmq_config):
     :return: conn rabbitmq 指定 virtual_host 链接
     '''
     try:
-        HOSTNAME = '192.168.75.114'
+        HOSTNAME = 'localhost'
         USERID = 'poll_cloud'
         PASSWORD = 'poll_cloud'
         VIRTUAL_HOST = 'test'
@@ -60,17 +60,19 @@ def consumerFunc(conn, exchange='amq.direct', ex_type="direct"):
     return exchange, chan
 
 
-def handle_message(body, message):
+def _do_body(body):
     print body
-    print message
-    print message
+
+
+def handle_message(body, message):
+    _do_body(body)
     message.ack()
 
 
 def setconsumer(qname, exchange, routekey, auto_del, chan):
     queue = Queue(qname, exchange, routing_key=routekey, auto_delete=auto_del)
     consumer = Consumer(chan, queue, callbacks=[handle_message])
-    consumer.consume(no_ack=False)
+    consumer.consume()
 
 
 def get():
@@ -80,7 +82,7 @@ def get():
     # 消费者
     exchange, chan = consumerFunc(conn=conn)
     # 消费者 消费进程
-    setconsumer(qname='count', routekey='count', auto_del=False, chan=chan, exchange=exchange)
+    setconsumer(qname='count', routekey=None, auto_del=False, chan=chan, exchange=exchange)
     # 关闭通道和关闭队列
     chan.close()
     conn.close()
