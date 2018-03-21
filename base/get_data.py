@@ -2,8 +2,6 @@
 # -*- coding:utf-8 -*- 
 __author__ = "liukang"
 
-import time
-
 from kombu import BrokerConnection, Exchange, Queue, Consumer
 
 
@@ -24,7 +22,7 @@ def get_rabbitmq_link(rabbitmq_config):
     :return: conn rabbitmq 指定 virtual_host 链接
     '''
     try:
-        HOSTNAME = 'localhost'
+        HOSTNAME = '192.168.75.114'
         USERID = 'poll_cloud'
         PASSWORD = 'poll_cloud'
         VIRTUAL_HOST = 'test'
@@ -64,14 +62,15 @@ def consumerFunc(conn, exchange='amq.direct', ex_type="direct"):
 
 def handle_message(body, message):
     print body
-    time.sleep(5)
+    print message
+    print message
     message.ack()
 
 
 def setconsumer(qname, exchange, routekey, auto_del, chan):
     queue = Queue(qname, exchange, routing_key=routekey, auto_delete=auto_del)
     consumer = Consumer(chan, queue, callbacks=[handle_message])
-    consumer.consume()
+    consumer.consume(no_ack=False)
 
 
 def get():

@@ -22,7 +22,7 @@ def get_rabbitmq_link(rabbitmq_config):
     :return: conn rabbitmq 指定 virtual_host 链接
     '''
     try:
-        HOSTNAME = 'localhost'
+        HOSTNAME = '192.168.75.114'
         USERID = 'poll_cloud'
         PASSWORD = 'poll_cloud'
         VIRTUAL_HOST = 'test'
