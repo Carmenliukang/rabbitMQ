@@ -26,9 +26,9 @@ def check_heartbeat(source):
 class Connection(object):
     def initconn(self, kwargs):
         HOSTNAME = 'localhost'
-        USERID = 'guest'
-        PASSWORK = 'guest'
-        VIRTUAL_HOST = '/'
+        USERID = 'poll_cloud'
+        PASSWORK = ''
+        VIRTUAL_HOST = 'test'
         PORT = 5672
         CONNECT_TIMEOUT = 5
         HEARTBEAT = 0
@@ -177,38 +177,20 @@ class Receive(Connection):
         self.rcv = False
 
 
-# test = Publish({'hostname':'localhost','userid':'guest','password':'guest','virtual_host':'test','exchange':'amq.direct','ex_type':'direct'})
-# test._to_queue('count','count')
-# test._from_queue('count')
+if __name__ == '__main__':
+    kwargs = {
+        'hostname': 'localhost',
+        'userid': 'guest',
+        'password': 'guest',
+        'virtual_host': 'test',
+        'port': 5672,
+        'connect_timeout': 10,
+        'check_heartbeat': False,
+        'heartbeat': True,
+        'exchange': 'amq.direct',
+        'ex_type': 'direct'
+    }
 
+    test = Receive(kwargs=kwargs)
 
-"""
-kwarge :
-     hostname
-     userid
-     password
-     virtual_host
-     port
-     connect_timeout
-     check_heartbeat     True or False
-     heartbeat           if check_heartbeat set True this
-     exchange            exchange name
-     ex_type             exchange type
-"""
-
-kwargs = {
-    'hostname': 'localhost',
-    'userid': 'guest',
-    'password': 'guest',
-    'virtual_host': 'test',
-    'port': 5672,
-    'connect_timeout': 10,
-    'check_heartbeat': False,
-    'heartbeat': True,
-    'exchange': 'amq.direct',
-    'ex_type': 'direct'
-}
-
-test = Receive(kwargs=kwargs)
-
-result = test._from_queue('count', timeout=5)
+    result = test._from_queue('count', timeout=5)

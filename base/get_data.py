@@ -2,91 +2,104 @@
 # -*- coding:utf-8 -*- 
 __author__ = "liukang"
 
+import traceback
+
 from kombu import BrokerConnection, Exchange, Queue, Consumer
 
 
-def get_rabbitmq_link(rabbitmq_config):
-    '''
-    返回 rabbitMQ 链接
-    :param rabbitmq_config: rabbitMQ配置字典：
-                rabbitmq_config = {
-                'hostname': '',
-                'userid': '',
-                'password': '',
-                'virtual_host': '',
-                'port': 15672,
-                'connect_timeout': 5,
-                'heartbeat': 10
-            }
-
-    :return: conn rabbitmq 指定 virtual_host 链接
-    '''
-    try:
-        HOSTNAME = 'localhost'
-        USERID = 'poll_cloud'
-        PASSWORD = 'poll_cloud'
-        VIRTUAL_HOST = 'test'
-        PORT = 5672
-        CONNECT_TIMEOUT = 10L
-        HEARTBEAT = 0
-
-        conn = BrokerConnection(
-            hostname=rabbitmq_config.get('hostname', HOSTNAME),
-            userid=rabbitmq_config.get('userid', USERID),
-            password=rabbitmq_config.get('password', PASSWORD),
-            virtual_host=rabbitmq_config.get('virtual_host', VIRTUAL_HOST),
-            port=rabbitmq_config.get('port', PORT),
-            connect_timeout=rabbitmq_config.get('connect_timeout', CONNECT_TIMEOUT),
-            heartbeat=rabbitmq_config.get('heartbeat', HEARTBEAT)
+class Connection(object):
+    def initconn(self, kwargs):
+        hostname = 'localhost'
+        user_id = 'poll_cloud'
+        password = 'poll_cloud'
+        virtual_host = 'test',
+        port = 5672
+        connect_timeout = 10
+        heartbeat = 0
+        self.conn = BrokerConnection(
+            hostname=kwargs.get('hostname') or hostname,
+            userid=kwargs.get('userid') or user_id,
+            password=kwargs.get('password') or password,
+            port=kwargs.get('port') or port,
+            virtual_host=kwargs.get('virtual_host') or virtual_host,
+            connect_timeout=kwargs.get('connect_timeout') or connect_timeout,
+            heartbeat=kwargs.get('heartbeat') or heartbeat
         )
 
-    except Exception as e:
-        print e
-        conn = None
-
-    return conn
+    def consumerFunc(self, exchange='amq.direct', type='direct'):
+        self.chan = self.conn.channel()
+        self.exchange = Exchange(exchange=exchange, type=type)
 
 
-def consumerFunc(conn, exchange='amq.direct', ex_type="direct"):
-    '''
-    用于创建消费者
-    :param exchange: 通道名称
-    :param ex_type: 通道类型
-    :return: 消费者
-    '''
-    chan = conn.channel()
-    exchange = Exchange(exchange, type=ex_type)
+class Receive(Connection):
+    def __init__(self, kwargs):
+        """
+            kwarge :
+                 hostname
+                 userid
+                 password
+                 virtual_host
+                 port
+                 connect_timeout
+                 check_heartbeat     True or False
+                 heartbeat           if check_heartbeat set True this
+                 exchange            exchange name
+                 ex_type             exchange type
+        """
+        self.kwargs = kwargs
+        self.rcv = True
+        self.getconnection()
 
-    return exchange, chan
+    def reconnection(self):
+        self.chan.close()
+        self.conn.close()
+        self.getconnection()
+        self.setconsumer()
 
+    def getconnection(self):
+        self.initconn(self.kwargs)
+        self.consumerFunc(self.kwargs.get('exchange'), self.kwargs.get('ex_type'))
 
-def _do_body(body):
-    print body
+    def setconsumer(self):
+        self.queue = Queue(self.qname, self.exchange, routing_key=self.routekey, auto_delete=self.auto_del)
+        consumer = Consumer(self.chan, self.queue, callbacks=[self.handle_message])
+        consumer.consume()
 
+    def _from_queue(self, qname, routekey=None, auto_del=False, timeout=None):
+        if not qname:
+            qname = routekey
+        self.TIME_OUT = float(timeout) if timeout else timeout
+        self.qname = qname
+        self.routekey = routekey
+        self.auto_del = auto_del
+        self.setconsumer()
+        self.conn.drain_events(timeout=self.TIME_OUT)
 
-def handle_message(body, message):
-    _do_body(body)
-    message.ack()
+    def _do(self, body):
+        print body
+        """ child func """
+        pass
 
-
-def setconsumer(qname, exchange, routekey, auto_del, chan):
-    queue = Queue(qname, exchange, routing_key=routekey, auto_delete=auto_del)
-    consumer = Consumer(chan, queue, callbacks=[handle_message])
-    consumer.consume()
-
-
-def get():
-    rabbitmq_config = {}
-    # rabbitMQ 链接
-    conn = get_rabbitmq_link(rabbitmq_config)
-    # 消费者
-    exchange, chan = consumerFunc(conn=conn)
-    # 消费者 消费进程
-    setconsumer(qname='count', routekey=None, auto_del=False, chan=chan, exchange=exchange)
-    # 关闭通道和关闭队列
-    chan.close()
-    conn.close()
+    def handle_message(self, body, message):
+        try:
+            self._do(body)
+            message.ack()
+        except:
+            traceback.print_exc()
+            print 'handle msg error'
 
 
 if __name__ == '__main__':
-    get()
+    kwargs = {
+        'hostname': 'localhost',
+        'userid': 'poll_cloud',
+        'password': 'poll_cloud',
+        'virtual_host': 'test',
+        'port': 5672,
+        'connect_timeout': 10,
+        'heartbeat': 0,
+        'exchange': 'amq.direct',
+        'ex_type': 'direct'
+    }
+    test = Receive(kwargs)
+    test._from_queue(qname='count', timeout=10)
